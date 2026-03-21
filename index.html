@@ -13,7 +13,7 @@
 <meta name="apple-mobile-web-app-title" content="Event Scout">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="application-name" content="Event Scout">
-<meta name="description" content="AI-powered event intelligence for tax incentive professionals. Find in-person conferences where your next clients will be.">
+<meta name="description" content="AI-powered event intelligence for tax incentive professionals.">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
@@ -21,166 +21,76 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 html,body,#root{width:100%;margin:0;padding:0}
-body{-webkit-overflow-scrolling:touch}
+body{-webkit-overflow-scrolling:touch;font-family:'Inter',system-ui,sans-serif}
 @keyframes espin{to{transform:rotate(360deg)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 input::placeholder,textarea::placeholder{color:#94a3b8 !important}
 input:focus,textarea:focus{border-color:#a5b4fc !important;box-shadow:0 0 0 3px rgba(99,102,241,0.08) !important}
-button{transition:all 0.15s;touch-action:manipulation}
-button:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 4px 16px rgba(0,0,0,0.08) !important}
+button{transition:all 0.15s;touch-action:manipulation;font-family:inherit}
+button:hover:not(:disabled){transform:translateY(-1px)}
 button:active:not(:disabled){transform:translateY(0)}
 ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:3px}
+@media print{
+  body *{visibility:hidden}
+  #print-area,#print-area *{visibility:visible}
+  #print-area{position:absolute;left:0;top:0;width:100%;padding:20px}
+  .no-print{display:none !important}
+  .print-event{page-break-inside:avoid;margin-bottom:16px;padding:12px;border:1px solid #ccc;border-radius:8px}
+  .print-event h3{font-size:14px;margin:0 0 4px}
+  .print-event p{font-size:11px;margin:2px 0;color:#333}
+  .print-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;display:inline-block;margin-bottom:4px}
+}
 </style>
 </head>
 <body>
 <div id="root"></div>
+<div id="print-area" style="display:none"></div>
 <script type="text/babel">
 const {useState,useRef,useEffect,useCallback}=React;
 
 const SYSTEM_PROMPT=`You are an elite event intelligence agent. Your sole mission is to find in-person events, conferences, and networking opportunities that will put your principal directly in front of decision makers who buy — or influence the purchase of — specialty tax incentive studies.
 
 ## WHO YOU WORK FOR
+Your principal runs a specialty tax consulting practice selling: Cost Segregation Studies, 179D Energy Efficient Commercial Building Deductions, 45L Energy Efficient Home Credits, ITC/UTC (Investment Tax Credit / Utility Tax Credits), and R&D Tax Credit Studies.
 
-Your principal runs a specialty tax consulting practice that sells the following studies and services to property owners, developers, manufacturers, software companies, and their advisors:
+## GEOGRAPHY
+Home base: San Francisco Bay Area / San Jose, California. Also include major US cities. Always flag Bay Area events first.
 
-- **Cost Segregation Studies** — accelerated depreciation for commercial real estate owners and investors
-- **179D Energy Efficient Commercial Building Deductions** — for building owners, designers, architects, and engineers who design energy-efficient commercial/government buildings
-- **45L Energy Efficient Home Credits** — for developers and builders of energy-efficient residential units (including multifamily)
-- **ITC / UTC (Investment Tax Credit / Utility Tax Credits)** — for renewable energy, solar, storage, and qualifying equipment investments
-- **R&D Tax Credit Studies** — for manufacturers, software companies, engineers, and any business that develops or improves products, processes, software, or formulas
-
-## YOUR PRINCIPAL'S GEOGRAPHY
-
-- **Home base:** San Francisco Bay Area / San Jose, California
-- **Travel radius:** Bay Area is top priority. Also include major US cities the principal can reasonably fly to for a high-value event.
-- **Always flag Bay Area events first**, then sort remaining events by ROI-to-travel-effort ratio
-
-## THE DECISION MAKERS YOU ARE HUNTING
-
-### Tier 1 — Direct Buyers (highest priority)
-- Commercial real estate developers and owners (office, multifamily, retail, industrial, mixed-use, hospitality)
-- Real estate investors, family offices, and PE firms with real estate or manufacturing portfolios
-- Owners and C-suite of manufacturing companies (especially with facilities, equipment, or product development)
-- CFOs, Controllers, VP of Tax, and Tax Directors at mid-market and growth-stage companies
-- Owners and founders of software/SaaS companies with meaningful R&D spend
-- General contractors and design-build firm principals
-- Architects and engineers at firms that design commercial or government buildings (179D referral sources)
-- Renewable energy developers and solar/storage companies (ITC)
-- Multifamily and residential developers and builders (45L)
-
-### Tier 2 — Referral Sources & Influencers (high priority)
-- CPAs and tax partners at regional and national accounting firms
-- Real estate attorneys and tax attorneys
-- Wealth advisors and financial planners who serve HNW clients with real estate or business holdings
-- Commercial real estate brokers
-- Construction lenders and commercial mortgage brokers
-- Property managers at scale
-
-### Tier 3 — Strategic Network (moderate priority)
-- Economic development officials and government incentive officers
-- Industry association leaders (NAIOP, ULI, ICSC, BOMA, AGC, NAM, local chambers, etc.)
-- Commercial insurance brokers who serve property owners and manufacturers
-
-## EVENT TYPES TO FIND — RANKED BY VALUE
-
-### A-Tier Events (always recommend)
-1. Industry conferences with named speakers who are Tier 1 or Tier 2 decision makers — events like Bisnow conferences.
-2. Small-format executive roundtables and invite-only dinners (20-80 people).
-3. Trade association annual conferences — NAIOP, ULI, ICSC, BOMA, AGC, NAM, AICPA, CPA society events.
-4. Commercial real estate networking events — deal-making mixers, capital markets summits.
-
-### B-Tier Events (recommend with context)
-5. Construction and design expos.
-6. Manufacturing trade shows — especially innovation, automation, reshoring, or facilities investment.
-7. Technology and SaaS founder events — growth-stage companies with R&D eligibility.
-8. Tax and accounting industry events — CPE conferences, state CPA society meetings.
-9. Sustainability and energy events — green building, solar/storage (ITC/179D).
-10. Small business events — where SMB owners who "make things" gather.
-
-## HOW TO EVALUATE AN EVENT
-
-### Must-Have Signals (at least 2)
-- Published speaker/panelist list with Tier 1 or 2 targets
-- Attendee profile mentions the decision maker types above
-- In-person format with structured networking
-- Located in a specified target city
-
-### Strong Positive Signals
-- Produced by Bisnow, GlobeSt, Connect CRE, NAIOP, ULI, ICSC, BOMA, AGC, NAM, AICPA, state CPA societies
-- Speakers include owners, developers, investors, or C-suite
-- 200+ attendees or intentionally curated
-- Topics touch cost recovery, capital investment, construction, manufacturing, energy efficiency
-- Sponsorship/exhibitor opportunities available
-
-### Red Flags (IMMEDIATELY SKIP — do not include in results)
-- Virtual-only, online-only, webinar, livestream, or "hybrid" events with no meaningful in-person component
-- Events described as "Zoom", "Teams", "virtual", "online", "digital", "remote", or "web conference"
-- Attendees primarily students or early-career
-- Single vendor sales pitch
-- No published agenda or speaker list
+## DECISION MAKERS TO FIND
+Tier 1 (Direct Buyers): CRE developers/owners, RE investors/PE firms, manufacturing C-suite, CFOs/Tax Directors, software/SaaS founders, GCs, architects/engineers, renewable energy developers, multifamily builders.
+Tier 2 (Referral Sources): CPAs/tax partners, RE/tax attorneys, wealth advisors, CRE brokers, construction lenders, property managers.
+Tier 3 (Strategic): Economic development officials, association leaders, commercial insurance brokers.
 
 ## CRITICAL RULE: IN-PERSON EVENTS ONLY
+ONLY recommend events with a physical venue. NEVER recommend webinars, virtual, online, Zoom, Teams, livestream, or digital events. If you cannot confirm a physical venue, SKIP IT.
 
-This is the single most important rule. The principal is ONLY interested in events where they will physically be in a room with other people. Apply these filters strictly:
+## MEMBER ORGANIZATIONS
+When member organizations are provided, search their websites and event calendars directly. Flag these as "Member Organization Event".
 
-- ONLY recommend events that are explicitly described as "in-person", "in person", "live", or list a physical venue/address
-- NEVER recommend webinars, virtual events, online summits, Zoom calls, livestreams, digital conferences, or any event that takes place on a screen
-- If an event is "hybrid" (both in-person and virtual), you may include it ONLY if the in-person component has real structured networking, a physical venue, and is clearly designed for attendees to meet face-to-face
-- If you cannot confirm an event is in-person from the event page, DO NOT include it
-- When searching, add "in-person" or "in person" to your search queries to filter results
-- In your output, always confirm the physical venue or location for each recommended event
-- If an event listing does not mention a venue, address, or physical location, SKIP IT
+## OUTPUT FORMAT — STRICT JSON
+You MUST output your results as a JSON array. No other text before or after. Each event is an object:
+[
+  {
+    "name": "Event Name",
+    "date": "Month Day, Year",
+    "location": "City, State — Venue Name",
+    "organizer": "Organizer Name",
+    "link": "https://...",
+    "format": "Conference",
+    "cost": "$XX or TBD or Invite-only",
+    "priority": "must-attend" | "strong-fit" | "worth-considering",
+    "why": "2-3 sentence explanation",
+    "decision_makers": "Who will be there",
+    "services": ["Cost Seg", "179D", "45L", "ITC", "R&D"],
+    "actions": ["Register by X", "Review speakers", "etc"],
+    "member_org": false
+  }
+]
 
-## MEMBER ORGANIZATION EVENT CALENDARS
-
-The principal belongs to private professional organizations whose events may not appear in public search results. When these organizations are provided, you MUST:
-
-1. Search each organization's website and event calendar directly (use their URL + "events" or "calendar")
-2. Look for upcoming in-person meetings, socials, mixers, luncheons, home group meetings, affinity group events, and conferences
-3. These member-org events are EXTREMELY high-value because the rooms are pre-filled with vetted professionals and referral sources
-4. Always include relevant member-org events in your results, and flag them with a note that says "Member Organization Event" so the principal knows they have priority access
-
-## OUTPUT FORMAT
-
-For each event:
-
-### [Event Name]
-**Date:** [Date]
-**Location:** [City, Venue if known]
-**Produced by:** [Organizer]
-**Link:** [URL]
-**Format:** [Conference / Roundtable / Expo / Mixer]
-**Cost:** [Fee or "TBD" / "Invite-only"]
-
-**Why this event:**
-[2-3 sentences]
-
-**Decision makers likely in the room:**
-[Tier 1 and 2 categories. Name speakers if available.]
-
-**Relevant service lines:**
-[Cost Seg / 179D / 45L / ITC / R&D]
-
-**Priority:** [🔴 Must-attend / 🟡 Strong fit / 🟢 Worth considering]
-
-**Action items:**
-- Register by [deadline]
-- Review speaker list for outreach targets
-- [Other steps]
-
-## SEARCH STRATEGY
-Search: Bisnow, NAIOP, ULI, ICSC, Connect CRE, GlobeSt, CalCPA, AICPA, AGC, NAM, BOMA, Eventbrite, business journals, LinkedIn Events. ALSO search any member organization URLs provided by the principal. Always include "in-person" or "in person" in search queries to filter out virtual events.
+ONLY output valid JSON. No markdown, no commentary, no preamble. Just the JSON array.
 
 ## BEHAVIORAL RULES
-1. IN-PERSON ONLY. Never recommend virtual, online, or webinar events. If you cannot confirm a physical venue, skip it.
-2. Verify events are real — future date, working link, registration open.
-3. Quality over quantity — 5 perfect beats 20 marginal.
-4. Name names from speaker lists.
-5. Think: "will the principal leave with 3-5 conversations that could become $50K+ engagements?"
-6. Flag sponsorship and speaking opportunities.
-7. Bundle events in the same city when timing aligns.
-8. Map each event to specific service lines.
-9. Search thoroughly across all sectors AND member organization calendars.
-10. Always search member organization event calendars when provided — these are high-priority.`;
+1. IN-PERSON ONLY. 2. Verify events are real. 3. Quality over quantity. 4. Name names from speaker lists. 5. Flag sponsorship/speaking opportunities in actions. 6. Bundle events in same city. 7. Map to specific service lines. 8. Search member org calendars when provided.`;
 
 const CITIES=[
   {id:"sf",label:"San Francisco",def:true},{id:"eastbay",label:"East Bay",def:true},{id:"la",label:"Los Angeles"},{id:"sandiego",label:"San Diego"},{id:"sacramento",label:"Sacramento"},
@@ -189,60 +99,91 @@ const CITIES=[
   {id:"atlanta",label:"Atlanta"},{id:"miami",label:"Miami / South Florida"},{id:"dc",label:"Washington D.C."},{id:"nashville",label:"Nashville"},
   {id:"austin",label:"Austin"},{id:"portland",label:"Portland"},
 ];
-
 const DATE_RANGES=[{id:"30",label:"Next 30 days"},{id:"60",label:"Next 60 days"},{id:"90",label:"Next 90 days"},{id:"180",label:"Next 6 months"},{id:"custom",label:"Custom dates"}];
-
 const CATEGORIES=[
-  {id:"cre",icon:"🏗️",label:"CRE & Construction",desc:"Commercial real estate, development, and construction conferences",base:"Find me the best commercial real estate, construction, and development conferences and networking events"},
-  {id:"mfg",icon:"🏭",label:"Manufacturing & R&D",desc:"Manufacturing summits, innovation expos, and R&D events",base:"Find manufacturing summits, innovation expos, and R&D-focused events where I can meet manufacturing company owners and CFOs"},
-  {id:"tax",icon:"📊",label:"Tax & CPA Conferences",desc:"CPA society events, tax conferences, and accounting networking",base:"Find CPA society events, tax conferences, and accounting industry networking events. Check CalCPA, AICPA, and state CPA society calendars"},
-  {id:"green",icon:"🌱",label:"Green Building & Energy",desc:"Sustainability, solar, renewable energy, and 179D events",base:"Find green building conferences, sustainability events, solar/renewable energy summits, and 179D-relevant events"},
-  {id:"all",icon:"🔍",label:"Full Scan — All Industries",desc:"Comprehensive search across all categories, ranked by deal value",base:"Do a comprehensive scan of all high-value events for my tax incentive consulting business. Search across CRE/construction, manufacturing, tax/accounting, green building, and tech founder events. Give me your top 8-10 recommendations ranked by business development value"},
+  {id:"cre",icon:"🏗️",label:"CRE & Construction",desc:"Commercial real estate, development, and construction conferences",base:"Find the best commercial real estate, construction, and development in-person conferences and networking events"},
+  {id:"mfg",icon:"🏭",label:"Manufacturing & R&D",desc:"Manufacturing summits, innovation expos, and R&D events",base:"Find in-person manufacturing summits, innovation expos, and R&D-focused events where I can meet manufacturing company owners and CFOs"},
+  {id:"tax",icon:"📊",label:"Tax & CPA Conferences",desc:"CPA society events, tax conferences, and accounting networking",base:"Find in-person CPA society events, tax conferences, and accounting industry networking events"},
+  {id:"green",icon:"🌱",label:"Green Building & Energy",desc:"Sustainability, solar, renewable energy, and 179D events",base:"Find in-person green building conferences, sustainability events, solar/renewable energy summits"},
+  {id:"all",icon:"🔍",label:"Full Scan — All Industries",desc:"Comprehensive search across all categories",base:"Do a comprehensive scan of all high-value in-person events for my tax incentive consulting business across CRE/construction, manufacturing, tax/accounting, green building, and tech. Top 8-10 ranked by deal value"},
 ];
 
-/* ─── Markdown ─── */
-function renderMD(text){
-  if(!text)return null;
-  return text.split("\\n").map((line,i)=>{
-    if(line.startsWith("### "))return React.createElement("h3",{key:i,style:md.h3},inl(line.slice(4)));
-    if(line.startsWith("## "))return React.createElement("h2",{key:i,style:md.h2},inl(line.slice(3)));
-    if(line.startsWith("# "))return React.createElement("h1",{key:i,style:md.h1},inl(line.slice(2)));
-    if(/^- \\[[ x]\\] /.test(line)){const ck=line[3]==="x";return React.createElement("div",{key:i,style:md.ckRow},React.createElement("div",{style:{...md.ckBox,...(ck?md.ckOn:{})}},ck&&"✓"),React.createElement("span",null,inl(line.slice(6))));}
-    if(line.startsWith("- "))return React.createElement("div",{key:i,style:md.li},React.createElement("span",{style:md.dot}),React.createElement("span",null,inl(line.slice(2))));
-    if(line.startsWith("---"))return React.createElement("hr",{key:i,style:md.hr});
-    if(!line.trim())return React.createElement("div",{key:i,style:{height:6}});
-    return React.createElement("p",{key:i,style:md.p},inl(line));
-  });
-}
-function inl(t){
-  const p=[];const rx=/(\\*\\*(.+?)\\*\\*)|(\\[(.+?)\\]\\((.+?)\\))|(🔴|🟡|🟢)/g;
-  let l=0,m,k=0;
-  while((m=rx.exec(t))!==null){
-    if(m.index>l)p.push(t.slice(l,m.index));
-    if(m[1])p.push(React.createElement("strong",{key:"b"+k,style:md.b},m[2]));
-    else if(m[3])p.push(React.createElement("a",{key:"a"+k,href:m[5],target:"_blank",rel:"noopener noreferrer",style:md.a},m[4]));
-    else if(m[6]){const c={"🔴":["#fef2f2","#dc2626","#fecaca"],"🟡":["#fefce8","#a16207","#fde68a"],"🟢":["#f0fdf4","#15803d","#bbf7d0"]}[m[6]];const lb={"🔴":"Must-attend","🟡":"Strong fit","🟢":"Worth considering"}[m[6]];p.push(React.createElement("span",{key:"e"+k,style:{...md.badge,background:c[0],color:c[1],borderColor:c[2]}},m[6]+" "+lb));}
-    l=m.index+m[0].length;k++;
-  }
-  if(l<t.length)p.push(t.slice(l));return p;
-}
-const md={
-  h1:{fontSize:20,fontWeight:800,color:"#0f172a",margin:"28px 0 12px",letterSpacing:"-0.03em"},
-  h2:{fontSize:17,fontWeight:700,color:"#334155",margin:"22px 0 10px"},
-  h3:{fontSize:15,fontWeight:700,color:"#6366f1",margin:"24px 0 10px",paddingTop:20,borderTop:"1px solid #f1f5f9"},
-  p:{margin:"0 0 8px",lineHeight:1.75,color:"#475569"},
-  b:{color:"#1e293b",fontWeight:700},
-  a:{color:"#6366f1",textDecoration:"none",fontWeight:600,borderBottom:"1px solid #e0e7ff"},
-  li:{display:"flex",gap:10,marginBottom:5,paddingLeft:2},
-  dot:{width:6,height:6,borderRadius:"50%",background:"#a5b4fc",flexShrink:0,marginTop:9},
-  ckRow:{display:"flex",gap:10,marginBottom:6,alignItems:"flex-start"},
-  ckBox:{width:20,height:20,borderRadius:6,border:"2px solid #cbd5e1",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginTop:2,fontSize:11,fontWeight:700,color:"#fff"},
-  ckOn:{background:"#6366f1",borderColor:"#6366f1"},
-  hr:{border:"none",borderTop:"1px solid #f1f5f9",margin:"16px 0"},
-  badge:{display:"inline-flex",alignItems:"center",gap:4,padding:"4px 14px",borderRadius:99,fontSize:12,fontWeight:700,border:"1.5px solid",marginLeft:4},
+const PRIORITY={
+  "must-attend":{emoji:"🔴",label:"Must-Attend",bg:"#fef2f2",fg:"#dc2626",bd:"#fecaca"},
+  "strong-fit":{emoji:"🟡",label:"Strong Fit",bg:"#fefce8",fg:"#a16207",bd:"#fde68a"},
+  "worth-considering":{emoji:"🟢",label:"Worth It",bg:"#f0fdf4",fg:"#15803d",bd:"#bbf7d0"},
 };
 
-/* ─── Shared date/city picker logic ─── */
+/* ─── Parse events from AI response ─── */
+function parseEvents(text){
+  try{
+    // Try direct JSON parse first
+    const trimmed=text.trim();
+    const start=trimmed.indexOf("[");
+    const end=trimmed.lastIndexOf("]");
+    if(start!==-1&&end!==-1){
+      const jsonStr=trimmed.slice(start,end+1);
+      const parsed=JSON.parse(jsonStr);
+      if(Array.isArray(parsed))return parsed;
+    }
+  }catch(e){}
+  // Fallback: extract from markdown
+  const events=[];
+  const blocks=text.split(/^###\s+/m).filter(b=>b.trim());
+  for(const block of blocks){
+    const lines=block.split("\\n");
+    const ev={name:lines[0]?.replace(/^#+\s*/,"").trim()||"Unnamed Event"};
+    const get=(key)=>{const r=new RegExp("\\*\\*"+key+":\\*\\*\\s*(.+)","i");const m=block.match(r);return m?m[1].trim():""};
+    ev.date=get("Date");ev.location=get("Location");ev.organizer=get("Produced by")||get("Organizer");
+    ev.link=get("Link");ev.format=get("Format");ev.cost=get("Cost");
+    ev.why=get("Why this event")||get("Why");ev.decision_makers=get("Decision makers")||get("Decision makers likely in the room");
+    ev.services=(get("Relevant service lines")||get("Services")||"").split(/[,/]/).map(s=>s.trim()).filter(Boolean);
+    const pStr=(get("Priority")||"").toLowerCase();
+    ev.priority=pStr.includes("must")?"must-attend":pStr.includes("strong")?"strong-fit":"worth-considering";
+    ev.actions=[];ev.member_org=block.toLowerCase().includes("member org");
+    const urlMatch=block.match(/https?:\/\/[^\s\)>\]]+/);
+    if(!ev.link&&urlMatch)ev.link=urlMatch[0];
+    if(ev.name&&ev.name!=="Unnamed Event")events.push(ev);
+  }
+  return events;
+}
+
+/* ─── Google Calendar URL ─── */
+function gcalUrl(ev){
+  const title=encodeURIComponent(ev.name||"");
+  const loc=encodeURIComponent(ev.location||"");
+  const details=encodeURIComponent((ev.why||"")+"\\n\\n"+(ev.link||""));
+  // Try to parse date for calendar
+  let dates="";
+  if(ev.date){
+    try{
+      const d=new Date(ev.date);
+      if(!isNaN(d)){
+        const fmt=(dt)=>dt.toISOString().replace(/[-:]/g,"").split(".")[0]+"Z";
+        const end=new Date(d.getTime()+8*60*60*1000);
+        dates=fmt(d)+"/"+fmt(end);
+      }
+    }catch(e){}
+  }
+  return "https://calendar.google.com/calendar/render?action=TEMPLATE&text="+title+"&location="+loc+"&details="+details+(dates?"&dates="+dates:"");
+}
+
+/* ─── Print ─── */
+function printEvents(events){
+  const area=document.getElementById("print-area");
+  area.innerHTML="<h1 style='font-size:20px;margin-bottom:16px;font-family:Inter,sans-serif'>Event Scout — Search Results</h1><p style='font-size:11px;color:#666;margin-bottom:20px'>Printed "+new Date().toLocaleDateString()+"</p>"+
+    events.map(ev=>{
+      const p=PRIORITY[ev.priority]||PRIORITY["worth-considering"];
+      return "<div class='print-event'><div class='print-badge' style='background:"+p.bg+";color:"+p.fg+"'>"+p.emoji+" "+p.label+"</div><h3>"+
+        (ev.name||"")+"</h3><p><b>Date:</b> "+(ev.date||"TBD")+" &nbsp;|&nbsp; <b>Location:</b> "+(ev.location||"TBD")+"</p><p><b>Organizer:</b> "+(ev.organizer||"")+" &nbsp;|&nbsp; <b>Format:</b> "+(ev.format||"")+" &nbsp;|&nbsp; <b>Cost:</b> "+(ev.cost||"TBD")+
+        "</p><p>"+(ev.why||"")+"</p>"+(ev.link?"<p style='color:#6366f1'>"+ev.link+"</p>":"")+"<p><b>Services:</b> "+((ev.services||[]).join(", ")||"—")+"</p></div>";
+    }).join("");
+  area.style.display="block";
+  window.print();
+  setTimeout(()=>{area.style.display="none"},500);
+}
+
+/* ─── Query builder ─── */
 function buildQuery(base,dateRange,customFrom,customTo,cities,memberships){
   let ds;
   if(dateRange==="custom"&&customFrom&&customTo){
@@ -250,77 +191,70 @@ function buildQuery(base,dateRange,customFrom,customTo,cities,memberships){
   } else { ds="in the next "+parseInt(dateRange)+" days"; }
   const cn=cities.map(id=>{const c=CITIES.find(x=>x.id===id);return c?c.label:null}).filter(Boolean);
   const cs=cn.length===CITIES.length?"all major US cities":cn.length>3?cn.slice(0,3).join(", ")+", and "+(cn.length-3)+" other cities":cn.join(" and ");
-  let q=base+" "+ds+" in "+cs+". IN-PERSON EVENTS ONLY — do not include any virtual, online, or webinar events. Every event must have a physical venue. Check Bisnow, NAIOP, ULI, Connect CRE, GlobeSt, AICPA, CalCPA, AGC, NAM, Eventbrite, and business journal calendars.";
+  let q=base+" "+ds+" in "+cs+". IN-PERSON EVENTS ONLY. Every event must have a physical venue. Return results as a JSON array following the output format in your instructions.";
   if(memberships&&memberships.length>0){
-    q+=" ALSO search these member organization event calendars (I am a member of these groups — check their websites for upcoming in-person events, meetings, socials, and mixers): "+memberships.map(m=>m.name+(m.url?" ("+m.url+")":"")).join("; ")+".";
+    q+=" ALSO search these member organization event calendars: "+memberships.map(m=>m.name+(m.url?" ("+m.url+")":"")).join("; ")+".";
   }
   return q;
 }
 
+/* ─── EventDetailModal ─── */
+function EventDetail({event:ev,onClose}){
+  if(!ev)return null;
+  const p=PRIORITY[ev.priority]||PRIORITY["worth-considering"];
+  return(
+    <div style={ml.overlay} onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div style={{...ml.card,maxWidth:500}}>
+        <div style={{padding:"24px 24px 0",display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+          <div style={{display:"inline-flex",alignItems:"center",gap:6,padding:"5px 14px",borderRadius:99,background:p.bg,color:p.fg,border:"1.5px solid "+p.bd,fontSize:13,fontWeight:700}}>{p.emoji} {p.label}</div>
+          <button onClick={onClose} style={ml.closeBtn}>✕</button>
+        </div>
+        <div style={{padding:"16px 24px 24px",overflowY:"auto",flex:1}}>
+          <h2 style={{fontSize:20,fontWeight:800,color:"#0f172a",margin:"0 0 16px",letterSpacing:"-0.03em",lineHeight:1.3}}>{ev.name}</h2>
+          {[["📅","Date",ev.date],["📍","Location",ev.location],["🏢","Organizer",ev.organizer],["🎫","Format",ev.format],["💰","Cost",ev.cost]].map(([ico,lab,val],i)=>val?(
+            <div key={i} style={{display:"flex",gap:10,marginBottom:10,fontSize:14}}>
+              <span style={{flexShrink:0}}>{ico}</span>
+              <span><strong style={{color:"#1e293b"}}>{lab}:</strong> <span style={{color:"#475569"}}>{val}</span></span>
+            </div>
+          ):null)}
+          {ev.member_org&&<div style={{display:"inline-flex",alignItems:"center",gap:6,padding:"4px 12px",borderRadius:99,background:"#eef2ff",color:"#4f46e5",fontSize:12,fontWeight:700,marginBottom:12,border:"1px solid #c7d2fe"}}>⭐ Member Organization Event</div>}
+          {ev.why&&<div style={{background:"#f8fafc",borderRadius:14,padding:"14px 16px",marginBottom:14,fontSize:13,lineHeight:1.7,color:"#475569",border:"1px solid #f1f5f9"}}><strong style={{color:"#1e293b"}}>Why attend:</strong> {ev.why}</div>}
+          {ev.decision_makers&&<div style={{fontSize:13,marginBottom:14,color:"#475569",lineHeight:1.6}}><strong style={{color:"#1e293b"}}>Decision makers:</strong> {ev.decision_makers}</div>}
+          {ev.services&&ev.services.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:14}}>{ev.services.map((s,i)=><span key={i} style={{padding:"4px 12px",borderRadius:99,background:"#f1f5f9",color:"#475569",fontSize:12,fontWeight:600}}>{s}</span>)}</div>}
+          {ev.actions&&ev.actions.length>0&&<div style={{marginBottom:16}}><strong style={{fontSize:13,color:"#1e293b"}}>Action items:</strong>{ev.actions.map((a,i)=><div key={i} style={{display:"flex",gap:8,marginTop:6,fontSize:13,color:"#475569"}}><span style={{color:"#a5b4fc"}}>•</span><span>{a}</span></div>)}</div>}
+          <div style={{display:"flex",flexDirection:"column",gap:8,marginTop:8}}>
+            {ev.link&&<a href={ev.link} target="_blank" rel="noopener noreferrer" style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,padding:"13px",borderRadius:99,background:"linear-gradient(135deg,#6366f1,#7c3aed)",color:"#fff",textDecoration:"none",fontSize:14,fontWeight:700}}>🌐 View Event Page</a>}
+            <a href={gcalUrl(ev)} target="_blank" rel="noopener noreferrer" style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,padding:"13px",borderRadius:99,background:"#fff",color:"#1e293b",textDecoration:"none",fontSize:14,fontWeight:700,border:"1.5px solid #e2e8f0"}}>📅 Add to Google Calendar</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ─── SearchModal ─── */
 function SearchModal({category,onClose,onSearch,memberships}){
-  const [dateRange,setDateRange]=useState("90");
-  const [customFrom,setCustomFrom]=useState("");
-  const [customTo,setCustomTo]=useState("");
-  const [cities,setCities]=useState(["sf","eastbay"]);
-  const [selectAll,setSelectAll]=useState(false);
-  const toggleCity=(id)=>{setCities(p=>p.includes(id)?p.filter(c=>c!==id):[...p,id]);setSelectAll(false)};
-  const toggleAll=()=>{if(selectAll){setCities(["sf","eastbay"]);setSelectAll(false)}else{setCities(CITIES.map(c=>c.id));setSelectAll(true)}};
+  const [dr,setDr]=useState("90");const [cf,setCf]=useState("");const [ct,setCt]=useState("");
+  const [cities,setCities]=useState(["sf","eastbay"]);const [sa,setSa]=useState(false);
+  const tc=(id)=>{setCities(p=>p.includes(id)?p.filter(c=>c!==id):[...p,id]);setSa(false)};
+  const ta=()=>{if(sa){setCities(["sf","eastbay"]);setSa(false)}else{setCities(CITIES.map(c=>c.id));setSa(true)}};
   const today=new Date().toISOString().split("T")[0];
-  const valid=cities.length>0&&(dateRange!=="custom"||(customFrom&&customTo));
-
+  const valid=cities.length>0&&(dr!=="custom"||(cf&&ct));
   return(
     <div style={ml.overlay} onClick={e=>e.target===e.currentTarget&&onClose()}>
       <div style={ml.card}>
-        <div style={ml.header}>
-          <div style={ml.headerLeft}>
-            <span style={{fontSize:28}}>{category.icon}</span>
-            <div>
-              <h2 style={ml.title}>{category.label}</h2>
-              <p style={ml.desc}>{category.desc}</p>
-            </div>
-          </div>
-          <button onClick={onClose} style={ml.closeBtn}>✕</button>
-        </div>
+        <div style={ml.header}><div style={{display:"flex",gap:12,alignItems:"center"}}><span style={{fontSize:26}}>{category.icon}</span><div><h2 style={ml.title}>{category.label}</h2><p style={{fontSize:12,color:"#94a3b8",margin:"2px 0 0"}}>{category.desc}</p></div></div><button onClick={onClose} style={ml.closeBtn}>✕</button></div>
         <div style={ml.body}>
-          <div style={ml.section}>
-            <div style={ml.secLabel}>📅 When are you available?</div>
-            <div style={ml.dateGrid}>
-              {DATE_RANGES.map(d=><button key={d.id} onClick={()=>setDateRange(d.id)} style={{...ml.dateBtn,...(dateRange===d.id?ml.dateSel:{})}}>{d.label}</button>)}
-            </div>
-            {dateRange==="custom"&&(
-              <div style={ml.customRow}>
-                <div style={ml.dateField}><label style={ml.fieldLabel}>From</label><input type="date" value={customFrom} min={today} onChange={e=>setCustomFrom(e.target.value)} style={ml.dateInput}/></div>
-                <div style={{color:"#cbd5e1",fontSize:18,paddingTop:24}}>→</div>
-                <div style={ml.dateField}><label style={ml.fieldLabel}>To</label><input type="date" value={customTo} min={customFrom||today} onChange={e=>setCustomTo(e.target.value)} style={ml.dateInput}/></div>
-              </div>
-            )}
+          <div style={ml.section}><div style={ml.secLabel}>📅 When?</div><div style={ml.dateGrid}>{DATE_RANGES.map(d=><button key={d.id} onClick={()=>setDr(d.id)} style={{...ml.dateBtn,...(dr===d.id?ml.dateSel:{})}}>{d.label}</button>)}</div>
+            {dr==="custom"&&<div style={{display:"flex",gap:10,marginTop:12}}><div style={{flex:1}}><div style={ml.fl}>From</div><input type="date" value={cf} min={today} onChange={e=>setCf(e.target.value)} style={ml.di}/></div><div style={{flex:1}}><div style={ml.fl}>To</div><input type="date" value={ct} min={cf||today} onChange={e=>setCt(e.target.value)} style={ml.di}/></div></div>}
           </div>
-          <div style={ml.section}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-              <div style={ml.secLabel}>📍 Where can you travel?</div>
-              <button onClick={toggleAll} style={ml.selAllBtn}>{selectAll?"Deselect all":"Select all"}</button>
-            </div>
-            <div style={ml.cityGrid}>
-              {CITIES.map(c=>{const on=cities.includes(c.id);return(
-                <button key={c.id} onClick={()=>toggleCity(c.id)} style={{...ml.cityBtn,...(on?ml.citySel:{})}}>
-                  <div style={{...ml.cityCheck,...(on?ml.cityCheckOn:{})}}>{on&&"✓"}</div>
-                  {c.label}
-                  {c.def&&<span style={ml.homeBadge}>Home</span>}
-                </button>
-              )})}
-            </div>
+          <div style={ml.section}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}><div style={ml.secLabel}>📍 Where?</div><button onClick={ta} style={ml.selAll}>{sa?"Deselect all":"Select all"}</button></div>
+            <div style={ml.cityGrid}>{CITIES.map(c=>{const on=cities.includes(c.id);return <button key={c.id} onClick={()=>tc(c.id)} style={{...ml.cityBtn,...(on?ml.citySel:{})}}><div style={{...ml.ck,...(on?ml.ckOn:{})}}>{on&&"✓"}</div>{c.label}{c.def&&<span style={ml.hb}>Home</span>}</button>})}</div>
           </div>
         </div>
         <div style={ml.footer}>
-          <div style={ml.summary}>
-            <span>📋</span>
-            <span style={ml.summaryText}>Searching <strong>{dateRange==="custom"?"custom dates":DATE_RANGES.find(d=>d.id===dateRange).label.toLowerCase()}</strong> in <strong>{cities.length===CITIES.length?"all cities":cities.length+" "+(cities.length===1?"city":"cities")}</strong>{memberships&&memberships.length>0&&<> + <strong>{memberships.length} member org{memberships.length>1?"s":""}</strong></>} · In-person only</span>
-          </div>
-          <div style={ml.footBtns}>
-            <button onClick={onClose} style={ml.cancelBtn}>Cancel</button>
-            <button onClick={()=>{onSearch(buildQuery(category.base,dateRange,customFrom,customTo,cities,memberships));onClose()}} disabled={!valid} style={{...ml.searchBtn,...(!valid?{opacity:.4,cursor:"default"}:{})}}>🔍 Find Events</button>
-          </div>
+          <div style={ml.summary}>📋 Searching <strong>{dr==="custom"?"custom dates":DATE_RANGES.find(d=>d.id===dr).label.toLowerCase()}</strong> in <strong>{cities.length===CITIES.length?"all cities":cities.length+" cit"+(cities.length===1?"y":"ies")}</strong>{memberships&&memberships.length>0&&<> + <strong>{memberships.length} org{memberships.length>1?"s":""}</strong></>}</div>
+          <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}><button onClick={onClose} style={ml.cancelBtn}>Cancel</button><button onClick={()=>{onSearch(buildQuery(category.base,dr,cf,ct,cities,memberships));onClose()}} disabled={!valid} style={{...ml.searchBtn,...(!valid?{opacity:.4,cursor:"default"}:{})}}>🔍 Find Events</button></div>
         </div>
       </div>
     </div>
@@ -329,141 +263,90 @@ function SearchModal({category,onClose,onSearch,memberships}){
 
 /* ─── FreeSearchModal ─── */
 function FreeSearchModal({initialText,onClose,onSearch,memberships}){
-  const [txt,setTxt]=useState(initialText||"");
-  const [dateRange,setDateRange]=useState("90");
-  const [customFrom,setCustomFrom]=useState("");
-  const [customTo,setCustomTo]=useState("");
-  const [cities,setCities]=useState(["sf","eastbay"]);
-  const [selectAll,setSelectAll]=useState(false);
-  const toggleCity=(id)=>{setCities(p=>p.includes(id)?p.filter(c=>c!==id):[...p,id]);setSelectAll(false)};
-  const toggleAll=()=>{if(selectAll){setCities(["sf","eastbay"]);setSelectAll(false)}else{setCities(CITIES.map(c=>c.id));setSelectAll(true)}};
+  const [txt,setTxt]=useState(initialText||"");const [dr,setDr]=useState("90");const [cf,setCf]=useState("");const [ct,setCt]=useState("");
+  const [cities,setCities]=useState(["sf","eastbay"]);const [sa,setSa]=useState(false);
+  const tc=(id)=>{setCities(p=>p.includes(id)?p.filter(c=>c!==id):[...p,id]);setSa(false)};
+  const ta=()=>{if(sa){setCities(["sf","eastbay"]);setSa(false)}else{setCities(CITIES.map(c=>c.id));setSa(true)}};
   const today=new Date().toISOString().split("T")[0];
-  const valid=txt.trim().length>0&&cities.length>0&&(dateRange!=="custom"||(customFrom&&customTo));
-
+  const valid=txt.trim()&&cities.length>0&&(dr!=="custom"||(cf&&ct));
   return(
     <div style={ml.overlay} onClick={e=>e.target===e.currentTarget&&onClose()}>
       <div style={ml.card}>
-        <div style={ml.header}>
-          <div style={ml.headerLeft}>
-            <span style={{fontSize:28}}>✏️</span>
-            <div><h2 style={ml.title}>Custom Search</h2><p style={ml.desc}>Describe what you're looking for</p></div>
-          </div>
-          <button onClick={onClose} style={ml.closeBtn}>✕</button>
-        </div>
+        <div style={ml.header}><div style={{display:"flex",gap:12,alignItems:"center"}}><span style={{fontSize:26}}>✏️</span><div><h2 style={ml.title}>Custom Search</h2></div></div><button onClick={onClose} style={ml.closeBtn}>✕</button></div>
         <div style={ml.body}>
-          <div style={ml.section}>
-            <div style={ml.secLabel}>✏️ What events are you looking for?</div>
-            <textarea value={txt} onChange={e=>setTxt(e.target.value)} placeholder='e.g. "CRE investor mixers" or "SaaS founder events" or "solar energy conferences"' style={ml.textarea} rows={3}/>
+          <div style={ml.section}><div style={ml.secLabel}>✏️ What?</div><textarea value={txt} onChange={e=>setTxt(e.target.value)} placeholder='e.g. "CRE investor mixers" or "solar conferences"' style={ml.ta} rows={2}/></div>
+          <div style={ml.section}><div style={ml.secLabel}>📅 When?</div><div style={ml.dateGrid}>{DATE_RANGES.map(d=><button key={d.id} onClick={()=>setDr(d.id)} style={{...ml.dateBtn,...(dr===d.id?ml.dateSel:{})}}>{d.label}</button>)}</div>
+            {dr==="custom"&&<div style={{display:"flex",gap:10,marginTop:12}}><div style={{flex:1}}><div style={ml.fl}>From</div><input type="date" value={cf} min={today} onChange={e=>setCf(e.target.value)} style={ml.di}/></div><div style={{flex:1}}><div style={ml.fl}>To</div><input type="date" value={ct} min={cf||today} onChange={e=>setCt(e.target.value)} style={ml.di}/></div></div>}
           </div>
-          <div style={ml.section}>
-            <div style={ml.secLabel}>📅 When?</div>
-            <div style={ml.dateGrid}>
-              {DATE_RANGES.map(d=><button key={d.id} onClick={()=>setDateRange(d.id)} style={{...ml.dateBtn,...(dateRange===d.id?ml.dateSel:{})}}>{d.label}</button>)}
-            </div>
-            {dateRange==="custom"&&(
-              <div style={ml.customRow}>
-                <div style={ml.dateField}><label style={ml.fieldLabel}>From</label><input type="date" value={customFrom} min={today} onChange={e=>setCustomFrom(e.target.value)} style={ml.dateInput}/></div>
-                <div style={{color:"#cbd5e1",fontSize:18,paddingTop:24}}>→</div>
-                <div style={ml.dateField}><label style={ml.fieldLabel}>To</label><input type="date" value={customTo} min={customFrom||today} onChange={e=>setCustomTo(e.target.value)} style={ml.dateInput}/></div>
-              </div>
-            )}
-          </div>
-          <div style={ml.section}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-              <div style={ml.secLabel}>📍 Where?</div>
-              <button onClick={toggleAll} style={ml.selAllBtn}>{selectAll?"Deselect all":"Select all"}</button>
-            </div>
-            <div style={ml.cityGrid}>
-              {CITIES.map(c=>{const on=cities.includes(c.id);return(
-                <button key={c.id} onClick={()=>toggleCity(c.id)} style={{...ml.cityBtn,...(on?ml.citySel:{})}}>
-                  <div style={{...ml.cityCheck,...(on?ml.cityCheckOn:{})}}>{on&&"✓"}</div>
-                  {c.label}
-                  {c.def&&<span style={ml.homeBadge}>Home</span>}
-                </button>
-              )})}
-            </div>
+          <div style={ml.section}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}><div style={ml.secLabel}>📍 Where?</div><button onClick={ta} style={ml.selAll}>{sa?"Deselect all":"Select all"}</button></div>
+            <div style={ml.cityGrid}>{CITIES.map(c=>{const on=cities.includes(c.id);return <button key={c.id} onClick={()=>tc(c.id)} style={{...ml.cityBtn,...(on?ml.citySel:{})}}><div style={{...ml.ck,...(on?ml.ckOn:{})}}>{on&&"✓"}</div>{c.label}{c.def&&<span style={ml.hb}>Home</span>}</button>})}</div>
           </div>
         </div>
         <div style={ml.footer}>
-          <div style={ml.summary}>
-            <span>📋</span>
-            <span style={ml.summaryText}>Searching <strong>{dateRange==="custom"?"custom dates":DATE_RANGES.find(d=>d.id===dateRange).label.toLowerCase()}</strong> in <strong>{cities.length===CITIES.length?"all cities":cities.length+" "+(cities.length===1?"city":"cities")}</strong>{memberships&&memberships.length>0&&<> + <strong>{memberships.length} member org{memberships.length>1?"s":""}</strong></>} · In-person only</span>
-          </div>
-          <div style={ml.footBtns}>
-            <button onClick={onClose} style={ml.cancelBtn}>Cancel</button>
-            <button onClick={()=>{onSearch(buildQuery(txt,dateRange,customFrom,customTo,cities,memberships));onClose()}} disabled={!valid} style={{...ml.searchBtn,...(!valid?{opacity:.4,cursor:"default"}:{})}}>🔍 Find Events</button>
-          </div>
+          <div style={ml.summary}>📋 Searching <strong>{dr==="custom"?"custom dates":DATE_RANGES.find(d=>d.id===dr).label.toLowerCase()}</strong> in <strong>{cities.length===CITIES.length?"all cities":cities.length+" cit"+(cities.length===1?"y":"ies")}</strong></div>
+          <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}><button onClick={onClose} style={ml.cancelBtn}>Cancel</button><button onClick={()=>{onSearch(buildQuery(txt,dr,cf,ct,cities,memberships));onClose();}} disabled={!valid} style={{...ml.searchBtn,...(!valid?{opacity:.4,cursor:"default"}:{})}}>🔍 Find Events</button></div>
         </div>
       </div>
     </div>
   );
 }
 
-/* ─── Modal Styles ─── */
 const ml={
-  overlay:{position:"fixed",inset:0,background:"rgba(15,23,42,0.5)",backdropFilter:"blur(6px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:20,fontFamily:"'Inter',system-ui,sans-serif"},
+  overlay:{position:"fixed",inset:0,background:"rgba(15,23,42,0.5)",backdropFilter:"blur(6px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:16,fontFamily:"'Inter',sans-serif"},
   card:{background:"#fff",borderRadius:24,width:"100%",maxWidth:540,maxHeight:"90vh",display:"flex",flexDirection:"column",boxShadow:"0 24px 80px rgba(0,0,0,0.15)",overflow:"hidden"},
-  header:{display:"flex",alignItems:"flex-start",justifyContent:"space-between",padding:"24px 28px 20px",borderBottom:"1px solid #f1f5f9"},
-  headerLeft:{display:"flex",gap:14,alignItems:"center"},
-  title:{fontSize:18,fontWeight:800,color:"#0f172a",margin:0,letterSpacing:"-0.03em"},
-  desc:{fontSize:13,color:"#64748b",margin:"2px 0 0",fontWeight:450},
-  closeBtn:{width:32,height:32,borderRadius:99,border:"none",background:"#f1f5f9",color:"#94a3b8",cursor:"pointer",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"inherit",flexShrink:0},
-  body:{flex:1,overflow:"auto",padding:"20px 28px"},
-  section:{marginBottom:24},
-  secLabel:{display:"flex",alignItems:"center",gap:8,fontSize:14,fontWeight:700,color:"#1e293b",marginBottom:12},
-  dateGrid:{display:"flex",flexWrap:"wrap",gap:8},
-  dateBtn:{padding:"10px 18px",borderRadius:99,border:"1.5px solid #e2e8f0",background:"#f8fafc",color:"#475569",cursor:"pointer",fontSize:13,fontWeight:600,fontFamily:"inherit"},
+  header:{display:"flex",alignItems:"flex-start",justifyContent:"space-between",padding:"20px 24px 16px",borderBottom:"1px solid #f1f5f9"},
+  title:{fontSize:17,fontWeight:800,color:"#0f172a",margin:0},
+  closeBtn:{width:30,height:30,borderRadius:99,border:"none",background:"#f1f5f9",color:"#94a3b8",cursor:"pointer",fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0},
+  body:{flex:1,overflow:"auto",padding:"16px 24px"},
+  section:{marginBottom:20},
+  secLabel:{display:"flex",alignItems:"center",gap:6,fontSize:13,fontWeight:700,color:"#1e293b",marginBottom:10},
+  dateGrid:{display:"flex",flexWrap:"wrap",gap:6},
+  dateBtn:{padding:"8px 16px",borderRadius:99,border:"1.5px solid #e2e8f0",background:"#f8fafc",color:"#475569",cursor:"pointer",fontSize:12,fontWeight:600},
   dateSel:{background:"#eef2ff",borderColor:"#a5b4fc",color:"#4f46e5"},
-  customRow:{display:"flex",gap:12,alignItems:"flex-end",marginTop:14},
-  dateField:{flex:1},
-  fieldLabel:{display:"block",fontSize:11,fontWeight:700,color:"#94a3b8",marginBottom:6,textTransform:"uppercase",letterSpacing:"0.06em"},
-  dateInput:{width:"100%",padding:"11px 14px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#f8fafc",color:"#1e293b",fontSize:13,outline:"none",fontFamily:"inherit"},
-  selAllBtn:{padding:"6px 14px",borderRadius:99,border:"1.5px solid #e2e8f0",background:"#fff",color:"#6366f1",cursor:"pointer",fontSize:12,fontWeight:600,fontFamily:"inherit"},
-  cityGrid:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6},
-  cityBtn:{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",cursor:"pointer",fontSize:13,fontWeight:500,fontFamily:"inherit",textAlign:"left"},
+  fl:{fontSize:10,fontWeight:700,color:"#94a3b8",marginBottom:4,textTransform:"uppercase",letterSpacing:"0.06em"},
+  di:{width:"100%",padding:"10px 12px",borderRadius:10,border:"1.5px solid #e2e8f0",background:"#f8fafc",color:"#1e293b",fontSize:13,outline:"none",fontFamily:"inherit"},
+  selAll:{padding:"5px 12px",borderRadius:99,border:"1.5px solid #e2e8f0",background:"#fff",color:"#6366f1",cursor:"pointer",fontSize:11,fontWeight:600},
+  cityGrid:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5},
+  cityBtn:{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",borderRadius:10,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",cursor:"pointer",fontSize:12,fontWeight:500,textAlign:"left"},
   citySel:{background:"#eef2ff",borderColor:"#a5b4fc",color:"#4338ca"},
-  cityCheck:{width:20,height:20,borderRadius:6,border:"2px solid #d1d5db",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:10,fontWeight:700,color:"#fff"},
-  cityCheckOn:{background:"#6366f1",borderColor:"#6366f1"},
-  homeBadge:{marginLeft:"auto",fontSize:10,fontWeight:700,color:"#6366f1",background:"#eef2ff",padding:"2px 8px",borderRadius:99,textTransform:"uppercase",letterSpacing:"0.05em"},
-  footer:{padding:"16px 28px 20px",borderTop:"1px solid #f1f5f9",background:"#fafbfd"},
-  summary:{display:"flex",alignItems:"center",gap:8,marginBottom:14,padding:"10px 14px",background:"#f1f5f9",borderRadius:12},
-  summaryText:{fontSize:13,color:"#475569"},
-  footBtns:{display:"flex",gap:10,justifyContent:"flex-end"},
-  cancelBtn:{padding:"12px 24px",borderRadius:99,border:"1.5px solid #e2e8f0",background:"#fff",color:"#64748b",cursor:"pointer",fontSize:14,fontWeight:600,fontFamily:"inherit"},
-  searchBtn:{padding:"12px 28px",borderRadius:99,border:"none",background:"linear-gradient(135deg,#6366f1,#8b5cf6)",color:"#fff",cursor:"pointer",fontSize:14,fontWeight:700,fontFamily:"inherit",display:"flex",alignItems:"center",gap:8,boxShadow:"0 4px 16px rgba(99,102,241,0.25)"},
-  textarea:{width:"100%",padding:"14px 18px",borderRadius:16,border:"1.5px solid #e2e8f0",background:"#f8fafc",color:"#1e293b",fontSize:14,outline:"none",fontFamily:"inherit",resize:"vertical",lineHeight:1.6},
+  ck:{width:18,height:18,borderRadius:5,border:"2px solid #d1d5db",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:10,fontWeight:700,color:"#fff"},
+  ckOn:{background:"#6366f1",borderColor:"#6366f1"},
+  hb:{marginLeft:"auto",fontSize:9,fontWeight:700,color:"#6366f1",background:"#eef2ff",padding:"2px 6px",borderRadius:99,textTransform:"uppercase"},
+  footer:{padding:"14px 24px 18px",borderTop:"1px solid #f1f5f9",background:"#fafbfd"},
+  summary:{fontSize:12,color:"#475569",marginBottom:12,padding:"8px 12px",background:"#f1f5f9",borderRadius:10},
+  cancelBtn:{padding:"10px 20px",borderRadius:99,border:"1.5px solid #e2e8f0",background:"#fff",color:"#64748b",cursor:"pointer",fontSize:13,fontWeight:600},
+  searchBtn:{padding:"10px 24px",borderRadius:99,border:"none",background:"linear-gradient(135deg,#6366f1,#8b5cf6)",color:"#fff",cursor:"pointer",fontSize:13,fontWeight:700,display:"flex",alignItems:"center",gap:6,boxShadow:"0 4px 16px rgba(99,102,241,0.25)"},
+  ta:{width:"100%",padding:"12px 16px",borderRadius:14,border:"1.5px solid #e2e8f0",background:"#f8fafc",color:"#1e293b",fontSize:13,outline:"none",fontFamily:"inherit",resize:"vertical",lineHeight:1.5},
 };
 
-/* ═══════════════════════ MAIN APP ═══════════════════════ */
+/* ═══════════ MAIN APP ═══════════ */
 function App(){
   const [key,setKey]=useState(()=>{try{return localStorage.getItem("es_key")||""}catch(e){return""}});
   const [memberships,setMemberships]=useState(()=>{try{const s=localStorage.getItem("es_memberships");return s?JSON.parse(s):[]}catch(e){return[]}});
-  const [newMemName,setNewMemName]=useState("");
-  const [newMemUrl,setNewMemUrl]=useState("");
-  const [q,setQ]=useState("");const [msgs,setMsgs]=useState([]);
+  const [nmn,setNmn]=useState("");const [nmu,setNmu]=useState("");
+  const [q,setQ]=useState("");const [events,setEvents]=useState([]);
   const [on,setOn]=useState(false);const [step,setStep]=useState("");const [err,setErr]=useState("");
   const [setup,setSetup]=useState(true);const [vis,setVis]=useState(false);
   const [modalCat,setModalCat]=useState(null);const [freeModal,setFreeModal]=useState(false);
+  const [detail,setDetail]=useState(null);
   const ref=useRef(null);const sc=useRef(0);
 
-  const saveMemberships=(m)=>{setMemberships(m);try{localStorage.setItem("es_memberships",JSON.stringify(m))}catch(e){}};
-  const addMembership=()=>{if(newMemName.trim()){saveMemberships([...memberships,{name:newMemName.trim(),url:newMemUrl.trim()}]);setNewMemName("");setNewMemUrl("")}};
-  const removeMembership=(i)=>{saveMemberships(memberships.filter((_,j)=>j!==i))};
-
-  useEffect(()=>{ref.current&&(ref.current.scrollTop=ref.current.scrollHeight)},[msgs,on]);
-  const sps=["Scanning event calendars...","Checking Bisnow, NAIOP, ULI...","Reviewing speaker lineups...","Evaluating networking ROI...","Matching service lines...","Ranking by deal potential...","Filtering for in-person only...","Checking member organization events..."];
-  useEffect(()=>{if(!on)return;let i=0;setStep(sps[0]);const iv=setInterval(()=>{i=(i+1)%sps.length;setStep(sps[i])},3200);return()=>clearInterval(iv)},[on]);
-
+  const saveMem=(m)=>{setMemberships(m);try{localStorage.setItem("es_memberships",JSON.stringify(m))}catch(e){}};
+  const addMem=()=>{if(nmn.trim()){saveMem([...memberships,{name:nmn.trim(),url:nmu.trim()}]);setNmn("");setNmu("")}};
+  const remMem=(i)=>{saveMem(memberships.filter((_,j)=>j!==i))};
   const saveKey=()=>{if(key.trim().length>10){try{localStorage.setItem("es_key",key)}catch(e){}setSetup(false)}};
 
+  useEffect(()=>{ref.current&&(ref.current.scrollTop=ref.current.scrollHeight)},[events,on]);
+  const sps=["Scanning event calendars...","Checking Bisnow, NAIOP, ULI...","Reviewing speaker lineups...","Filtering in-person only...","Matching service lines...","Ranking by deal potential...","Checking member orgs..."];
+  useEffect(()=>{if(!on)return;let i=0;setStep(sps[0]);const iv=setInterval(()=>{i=(i+1)%sps.length;setStep(sps[i])},3200);return()=>clearInterval(iv)},[on]);
+
   const run=useCallback(async(uq)=>{
-    if(!key||!uq.trim())return;setOn(true);setErr("");sc.current=0;
-    setMsgs(p=>[...p,{role:"user",content:uq}]);setQ("");
+    if(!key||!uq.trim())return;setOn(true);setErr("");setEvents([]);sc.current=0;
     let conv=[{role:"user",content:uq}];let fin="";
     try{
       for(let it=0;it<25;it++){
         const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-sonnet-4-5-20250929",max_tokens:16000,system:SYSTEM_PROMPT,tools:[{type:"web_search_20250305",name:"web_search",max_uses:20}],messages:conv})});
-        if(!r.ok){const e=await r.json().catch(()=>({}));if(r.status===401)throw new Error("Invalid API key — double-check and try again.");if(r.status===429)throw new Error("Rate limit — wait a moment and retry.");throw new Error(e?.error?.message||"Error ("+r.status+")");}
+        if(!r.ok){const e=await r.json().catch(()=>({}));if(r.status===401)throw new Error("Invalid API key.");if(r.status===429)throw new Error("Rate limit — wait and retry.");throw new Error(e?.error?.message||"Error ("+r.status+")");}
         const d=await r.json();fin+=(d.content?.filter(b=>b.type==="text")||[]).map(b=>b.text).join("\\n");
         if(d.stop_reason==="end_turn")break;
         if(d.stop_reason==="tool_use"||d.content?.some(b=>b.type==="server_tool_use"||b.type==="tool_use")){
@@ -472,7 +355,9 @@ function App(){
           if(tr.length)conv.push({role:"user",content:tr});continue;
         }break;
       }
-      setMsgs(p=>[...p,{role:"assistant",content:fin.trim()||"No results — try a more specific search."}]);
+      const parsed=parseEvents(fin);
+      if(parsed.length>0)setEvents(parsed);
+      else setErr("No events found. Try a broader search or different cities.");
     }catch(e){setErr(e.message)}finally{setOn(false)}
   },[key]);
 
@@ -483,50 +368,19 @@ function App(){
         <div style={S.logo}>🎯</div>
         <h1 style={S.sTitle}>Event Scout</h1>
         <p style={S.sSub}>Find the events that close deals</p>
-        <div style={S.howBox}>
-          <div style={S.howTitle}>How it works</div>
-          {[["1","Get an API key","Visit console.anthropic.com → API Keys and create one"],["2","Paste it below","Your key is saved in this browser only — never sent anywhere else"],["3","Pick a category","Choose your dates and cities, then the AI searches live event calendars"]].map(([n,t,d],i)=>(
-            <div key={i} style={S.howRow}><div style={S.howN}>{n}</div><div><div style={S.howT}>{t}</div><div style={S.howD}>{d}</div></div></div>
-          ))}
+        <div style={S.box}>
+          <div style={S.boxT}>How it works</div>
+          {[["1","Get an API key","Visit console.anthropic.com and create one"],["2","Paste it below","Saved in your browser only"],["3","Pick a category","Choose dates and cities, AI searches live calendars"]].map(([n,t,d],i)=>(<div key={i} style={S.howRow}><div style={S.howN}>{n}</div><div><div style={S.howT}>{t}</div><div style={S.howD}>{d}</div></div></div>))}
         </div>
-        <div style={{marginBottom:14}}>
-          <div style={S.lbl}>Your API Key</div>
-          <div style={{display:"flex",gap:8,marginBottom:16}}>
-            <input type={vis?"text":"password"} value={key} onChange={e=>setKey(e.target.value)} placeholder="sk-ant-api03-..." style={S.kIn} onKeyDown={e=>e.key==="Enter"&&saveKey()}/>
-            <button onClick={()=>setVis(!vis)} style={S.pill}>{vis?"Hide":"Show"}</button>
-          </div>
+        <div style={{marginBottom:12,textAlign:"left"}}><div style={S.lbl}>API Key</div><div style={{display:"flex",gap:8,marginBottom:12}}><input type={vis?"text":"password"} value={key} onChange={e=>setKey(e.target.value)} placeholder="sk-ant-api03-..." style={S.kIn} onKeyDown={e=>e.key==="Enter"&&saveKey()}/><button onClick={()=>setVis(!vis)} style={S.pill}>{vis?"Hide":"Show"}</button></div></div>
+        <div style={{...S.box,marginBottom:12}}>
+          <div style={S.boxT}>My Memberships</div>
+          <div style={{fontSize:12,color:"#94a3b8",marginBottom:10}}>Private groups whose event calendars the AI should search</div>
+          {memberships.map((m,i)=>(<div key={i} style={S.memItem}><div style={{flex:1}}><div style={{fontSize:13,fontWeight:600,color:"#1e293b"}}>{m.name}</div>{m.url&&<div style={{fontSize:11,color:"#6366f1"}}>{m.url}</div>}</div><button onClick={()=>remMem(i)} style={S.memX}>✕</button></div>))}
+          <div style={{display:"flex",gap:6,marginBottom:6}}><input value={nmn} onChange={e=>setNmn(e.target.value)} placeholder="Organization name" style={{...S.kIn,fontFamily:"inherit",flex:1}} onKeyDown={e=>e.key==="Enter"&&addMem()}/></div>
+          <div style={{display:"flex",gap:6}}><input value={nmu} onChange={e=>setNmu(e.target.value)} placeholder="Website URL (optional)" style={{...S.kIn,fontFamily:"inherit",flex:1}} onKeyDown={e=>e.key==="Enter"&&addMem()}/><button onClick={addMem} disabled={!nmn.trim()} style={{...S.pill,color:nmn.trim()?"#6366f1":"#cbd5e1"}}>+ Add</button></div>
         </div>
-
-        <div style={S.memBox}>
-          <div style={S.memHeader}>
-            <div style={S.lbl}>My Memberships</div>
-            <div style={{fontSize:12,color:"#94a3b8",fontWeight:400,marginBottom:8,textAlign:"left",textTransform:"none",letterSpacing:"normal"}}>Add groups you belong to so the agent searches their private event calendars</div>
-          </div>
-          {memberships.length>0&&(
-            <div style={{marginBottom:12}}>
-              {memberships.map((m,i)=>(
-                <div key={i} style={S.memItem}>
-                  <div style={{flex:1}}>
-                    <div style={{fontSize:13,fontWeight:600,color:"#1e293b"}}>{m.name}</div>
-                    {m.url&&<div style={{fontSize:11,color:"#6366f1",wordBreak:"break-all"}}>{m.url}</div>}
-                  </div>
-                  <button onClick={()=>removeMembership(i)} style={S.memRemove}>✕</button>
-                </div>
-              ))}
-            </div>
-          )}
-          <div style={{display:"flex",gap:8,marginBottom:8}}>
-            <input value={newMemName} onChange={e=>setNewMemName(e.target.value)} placeholder="Organization name" style={{...S.kIn,fontFamily:"inherit",flex:1}} onKeyDown={e=>e.key==="Enter"&&addMembership()}/>
-          </div>
-          <div style={{display:"flex",gap:8}}>
-            <input value={newMemUrl} onChange={e=>setNewMemUrl(e.target.value)} placeholder="Website URL (optional)" style={{...S.kIn,fontFamily:"inherit",flex:1}} onKeyDown={e=>e.key==="Enter"&&addMembership()}/>
-            <button onClick={addMembership} disabled={!newMemName.trim()} style={{...S.pill,color:newMemName.trim()?"#6366f1":"#cbd5e1",cursor:newMemName.trim()?"pointer":"default"}}>+ Add</button>
-          </div>
-        </div>
-
-        <div style={{marginBottom:14}}>
-          <button onClick={saveKey} disabled={key.trim().length<10} style={{...S.bigPill,...(key.trim().length<10?{opacity:.35,cursor:"default"}:{})}}>Get Started →</button>
-        </div>
+        <button onClick={saveKey} disabled={key.trim().length<10} style={{...S.goBtn,...(key.trim().length<10?{opacity:.35,cursor:"default"}:{})}}>Get Started →</button>
         <div style={S.note}>~$0.10–0.40 per search in API credits</div>
       </div>
     </div>
@@ -534,59 +388,78 @@ function App(){
 
   /* ─── MAIN ─── */
   return(
-    <div style={S.app}>
+    <div style={S.app} className="no-print">
       {modalCat&&<SearchModal category={modalCat} onClose={()=>setModalCat(null)} onSearch={run} memberships={memberships}/>}
       {freeModal&&<FreeSearchModal initialText={q} onClose={()=>{setFreeModal(false);setQ("")}} onSearch={run} memberships={memberships}/>}
+      {detail&&<EventDetail event={detail} onClose={()=>setDetail(null)}/>}
 
       <div style={S.bar}>
-        <div style={{display:"flex",alignItems:"center",gap:10}}>
-          <div style={S.barIcon}>🎯</div>
-          <span style={S.barT}>Event Scout</span>
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <div style={S.barIcon}>🎯</div><span style={S.barT}>Event Scout</span>
+          {events.length>0&&<span style={{fontSize:12,color:"#94a3b8",fontWeight:600}}>{events.length} event{events.length!==1?"s":""}</span>}
         </div>
-        <div style={{display:"flex",gap:8}}>
-          <button onClick={()=>setMsgs([])} style={S.barBtn}>New Search</button>
-          <button onClick={()=>{setSetup(true)}} style={S.barBtn}>Settings</button>
+        <div style={{display:"flex",gap:6}}>
+          {events.length>0&&<button onClick={()=>printEvents(events)} style={S.barBtn}>🖨️ Print</button>}
+          <button onClick={()=>{setEvents([]);setErr("")}} style={S.barBtn}>New</button>
+          <button onClick={()=>setSetup(true)} style={S.barBtn}>⚙️</button>
         </div>
       </div>
 
       <div style={S.mid} ref={ref}>
-        {msgs.length===0&&!on&&(
+        {events.length===0&&!on&&!err&&(
           <div style={S.hero}>
-            <div style={{fontSize:56,marginBottom:12}}>🎯</div>
-            <h2 style={S.heroT}>What events should you attend?</h2>
-            <p style={S.heroS}>Pick a category, choose your dates and cities, and the AI will search live event calendars to find where your next clients will be.</p>
+            <div style={{fontSize:48,marginBottom:10}}>🎯</div>
+            <h2 style={S.heroT}>Find Your Next Deal</h2>
+            <p style={S.heroS}>Pick a category. Choose your dates and cities. Get a ranked list of events where your next clients will be.</p>
             <div style={S.qList}>
               {CATEGORIES.map((x,i)=>(
                 <button key={i} onClick={()=>setModalCat(x)} style={S.qBtn}>
-                  <span style={{fontSize:22}}>{x.icon}</span>
-                  <div style={{flex:1,textAlign:"left"}}>
-                    <div style={{fontWeight:700}}>{x.label}</div>
-                    <div style={{fontSize:12,color:"#94a3b8",fontWeight:450,marginTop:2}}>{x.desc}</div>
-                  </div>
-                  <span style={{color:"#c7d2fe",fontSize:18,flexShrink:0}}>›</span>
+                  <span style={{fontSize:20}}>{x.icon}</span>
+                  <span style={{flex:1,textAlign:"left",fontWeight:700,fontSize:14}}>{x.label}</span>
+                  <span style={{color:"#c7d2fe",fontSize:18}}>›</span>
                 </button>
               ))}
             </div>
           </div>
         )}
 
-        {msgs.map((m,i)=>m.role==="user"?(
-          <div key={i} style={S.uWrap}><div style={S.uB}><p style={S.uT}>{m.content}</p></div></div>
-        ):(
-          <div key={i} style={{marginBottom:28}}><div style={S.aB}>
-            <div style={S.aH}><span style={{fontSize:16}}>🎯</span><span style={S.aN}>Event Scout</span></div>
-            <div style={S.aC}>{renderMD(m.content)}</div>
-          </div></div>
-        ))}
+        {/* ─── EVENT RESULTS LIST ─── */}
+        {events.length>0&&(
+          <div style={{padding:"8px 0"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+              <h2 style={{fontSize:18,fontWeight:800,color:"#0f172a",letterSpacing:"-0.03em"}}>Your Events</h2>
+              <button onClick={()=>printEvents(events)} style={{padding:"6px 14px",borderRadius:99,border:"1.5px solid #e2e8f0",background:"#fff",color:"#475569",cursor:"pointer",fontSize:12,fontWeight:600}}>🖨️ Print All</button>
+            </div>
+            {events.map((ev,i)=>{
+              const p=PRIORITY[ev.priority]||PRIORITY["worth-considering"];
+              return(
+                <button key={i} onClick={()=>setDetail(ev)} style={{...S.evCard,animationDelay:i*60+"ms"}}>
+                  <div style={{display:"flex",alignItems:"flex-start",gap:12,width:"100%"}}>
+                    <div style={{width:42,height:42,borderRadius:12,background:p.bg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0,border:"1.5px solid "+p.bd}}>{p.emoji}</div>
+                    <div style={{flex:1,textAlign:"left",minWidth:0}}>
+                      <div style={{fontSize:14,fontWeight:700,color:"#0f172a",marginBottom:3,lineHeight:1.3}}>{ev.name}</div>
+                      <div style={{fontSize:12,color:"#64748b",display:"flex",flexWrap:"wrap",gap:4}}>
+                        {ev.date&&<span>📅 {ev.date}</span>}
+                        {ev.location&&<span> · 📍 {ev.location}</span>}
+                      </div>
+                      {ev.services&&ev.services.length>0&&<div style={{display:"flex",flexWrap:"wrap",gap:4,marginTop:6}}>{ev.services.slice(0,3).map((s,j)=><span key={j} style={{padding:"2px 8px",borderRadius:99,background:"#f1f5f9",color:"#64748b",fontSize:10,fontWeight:600}}>{s}</span>)}</div>}
+                    </div>
+                    <span style={{color:"#c7d2fe",fontSize:20,flexShrink:0,alignSelf:"center"}}>›</span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
 
-        {on&&<div style={{padding:"12px 0"}}><div style={S.loadC}><div style={S.sp}/><div><div style={S.ldT}>Searching for events...</div><div style={S.ldS}>{step}</div></div></div></div>}
+        {on&&<div style={{padding:"20px 0"}}><div style={S.loadC}><div style={S.sp}/><div><div style={S.ldT}>Searching for events...</div><div style={S.ldS}>{step}</div></div></div></div>}
         {err&&<div style={S.errB}><strong>⚠️</strong> {err}</div>}
       </div>
 
       <div style={S.foot}>
-        {msgs.length>0&&!on&&<div style={S.chips}>{CATEGORIES.slice(0,4).map((x,i)=><button key={i} onClick={()=>setModalCat(x)} style={S.chipB}>{x.icon} {x.label}</button>)}</div>}
-        <div style={{display:"flex",gap:10}}>
-          <input type="text" value={q} onChange={e=>setQ(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&!on&&q.trim())setFreeModal(true)}} placeholder='Type a search and press Enter to set dates & cities...' style={S.tIn} disabled={on}/>
+        {events.length>0&&!on&&<div style={S.chips}>{CATEGORIES.slice(0,4).map((x,i)=><button key={i} onClick={()=>setModalCat(x)} style={S.chipB}>{x.icon} {x.label}</button>)}</div>}
+        <div style={{display:"flex",gap:8}}>
+          <input type="text" value={q} onChange={e=>setQ(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&!on&&q.trim())setFreeModal(true)}} placeholder='Type a search and press Enter...' style={S.tIn} disabled={on}/>
           <button onClick={()=>q.trim()&&setFreeModal(true)} disabled={on||!q.trim()} style={{...S.sendB,...(on||!q.trim()?{opacity:.35,cursor:"default"}:{})}}>
             {on?<div style={S.mSp}/>:"→"}
           </button>
@@ -597,72 +470,58 @@ function App(){
 }
 
 const S={
-  sWrap:{minHeight:"100vh",background:"linear-gradient(160deg,#f8fafc 0%,#eef2ff 50%,#faf5ff 100%)",padding:"40px 16px",fontFamily:"'Inter',system-ui,sans-serif"},
+  sWrap:{minHeight:"100vh",background:"linear-gradient(160deg,#f8fafc 0%,#eef2ff 50%,#faf5ff 100%)",padding:"40px 16px",fontFamily:"'Inter',sans-serif"},
   sCard:{background:"#fff",borderRadius:28,padding:"32px 24px",maxWidth:540,width:"100%",margin:"0 auto",boxShadow:"0 0 0 1px rgba(0,0,0,0.03), 0 24px 68px rgba(0,0,0,0.07)",textAlign:"center",marginBottom:40},
   logo:{width:52,height:52,borderRadius:18,background:"linear-gradient(135deg,#6366f1,#a78bfa)",display:"inline-flex",alignItems:"center",justifyContent:"center",marginBottom:14,boxShadow:"0 8px 24px rgba(99,102,241,0.25)",fontSize:24},
   sTitle:{fontSize:24,fontWeight:800,color:"#0f172a",margin:"0 0 4px",letterSpacing:"-0.04em"},
   sSub:{fontSize:15,color:"#64748b",margin:"0 0 24px",fontWeight:450},
-  howBox:{background:"#f8fafc",borderRadius:16,padding:"16px 20px",marginBottom:20,textAlign:"left",border:"1px solid #f1f5f9"},
-  memBox:{background:"#f8fafc",borderRadius:16,padding:"16px 20px",marginBottom:20,textAlign:"left",border:"1px solid #f1f5f9"},
-  memHeader:{marginBottom:4},
-  memItem:{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",borderRadius:12,background:"#fff",border:"1px solid #e2e8f0",marginBottom:6},
-  memRemove:{width:26,height:26,borderRadius:99,border:"none",background:"#fef2f2",color:"#ef4444",cursor:"pointer",fontSize:12,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontFamily:"inherit"},
-  howTitle:{fontSize:11,fontWeight:800,color:"#94a3b8",textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:14},
-  howRow:{display:"flex",gap:14,alignItems:"flex-start",marginBottom:12},
-  howN:{minWidth:28,height:28,borderRadius:99,background:"#eef2ff",color:"#6366f1",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:800},
-  howT:{fontSize:14,fontWeight:700,color:"#1e293b",marginBottom:1},
-  howD:{fontSize:13,color:"#64748b",lineHeight:1.5},
-  lbl:{fontSize:11,fontWeight:800,color:"#64748b",textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:8,textAlign:"left"},
-  kIn:{flex:1,padding:"14px 18px",borderRadius:14,border:"1.5px solid #e2e8f0",background:"#f8fafc",color:"#1e293b",fontSize:14,outline:"none",fontFamily:"'JetBrains Mono',monospace"},
-  pill:{padding:"14px 20px",borderRadius:99,border:"1.5px solid #e2e8f0",background:"#fff",color:"#64748b",cursor:"pointer",fontSize:13,fontWeight:600,fontFamily:"inherit"},
-  bigPill:{width:"100%",padding:"16px",borderRadius:99,border:"none",background:"linear-gradient(135deg,#6366f1,#8b5cf6)",color:"#fff",fontSize:16,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:8,boxShadow:"0 6px 20px rgba(99,102,241,0.3)"},
-  note:{fontSize:12,color:"#94a3b8",marginTop:12},
+  box:{background:"#f8fafc",borderRadius:16,padding:"16px 20px",marginBottom:20,textAlign:"left",border:"1px solid #f1f5f9"},
+  boxT:{fontSize:10,fontWeight:800,color:"#94a3b8",textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:10},
+  howRow:{display:"flex",gap:12,alignItems:"flex-start",marginBottom:10},
+  howN:{minWidth:26,height:26,borderRadius:99,background:"#eef2ff",color:"#6366f1",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:800},
+  howT:{fontSize:13,fontWeight:700,color:"#1e293b",marginBottom:1},
+  howD:{fontSize:12,color:"#64748b",lineHeight:1.4},
+  lbl:{fontSize:10,fontWeight:800,color:"#64748b",textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:6},
+  kIn:{flex:1,padding:"12px 16px",borderRadius:12,border:"1.5px solid #e2e8f0",background:"#f8fafc",color:"#1e293b",fontSize:13,outline:"none",fontFamily:"'JetBrains Mono',monospace"},
+  pill:{padding:"12px 18px",borderRadius:99,border:"1.5px solid #e2e8f0",background:"#fff",color:"#64748b",cursor:"pointer",fontSize:12,fontWeight:600},
+  goBtn:{width:"100%",padding:"14px",borderRadius:99,border:"none",background:"linear-gradient(135deg,#6366f1,#8b5cf6)",color:"#fff",fontSize:15,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8,boxShadow:"0 6px 20px rgba(99,102,241,0.3)",marginBottom:10},
+  note:{fontSize:11,color:"#94a3b8",marginTop:8},
+  memItem:{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",borderRadius:10,background:"#fff",border:"1px solid #e2e8f0",marginBottom:6},
+  memX:{width:24,height:24,borderRadius:99,border:"none",background:"#fef2f2",color:"#ef4444",cursor:"pointer",fontSize:11,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0},
 
-  app:{position:"fixed",top:0,left:0,right:0,bottom:0,display:"flex",flexDirection:"column",background:"#f8fafc",fontFamily:"'Inter',system-ui,sans-serif",color:"#1e293b",overflow:"hidden"},
-  bar:{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 20px",borderBottom:"1px solid #e2e8f0",background:"#fff",flexShrink:0},
-  barIcon:{width:32,height:32,borderRadius:10,background:"linear-gradient(135deg,#6366f1,#a78bfa)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16},
-  barT:{fontSize:15,fontWeight:800,color:"#0f172a",letterSpacing:"-0.02em"},
-  barBtn:{padding:"7px 18px",borderRadius:99,border:"1.5px solid #e2e8f0",background:"#fff",color:"#64748b",cursor:"pointer",fontSize:13,fontWeight:600,fontFamily:"inherit"},
+  app:{position:"fixed",top:0,left:0,right:0,bottom:0,display:"flex",flexDirection:"column",background:"#f8fafc",fontFamily:"'Inter',sans-serif",color:"#1e293b",overflow:"hidden"},
+  bar:{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 16px",borderBottom:"1px solid #e2e8f0",background:"#fff",flexShrink:0},
+  barIcon:{width:30,height:30,borderRadius:8,background:"linear-gradient(135deg,#6366f1,#a78bfa)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14},
+  barT:{fontSize:14,fontWeight:800,color:"#0f172a",letterSpacing:"-0.02em"},
+  barBtn:{padding:"6px 12px",borderRadius:99,border:"1.5px solid #e2e8f0",background:"#fff",color:"#64748b",cursor:"pointer",fontSize:12,fontWeight:600},
 
-  mid:{flex:1,overflow:"auto",padding:"24px 24px 0"},
-  hero:{textAlign:"center",paddingTop:24},
-  heroT:{fontSize:26,fontWeight:800,color:"#0f172a",margin:"0 0 10px",letterSpacing:"-0.04em"},
-  heroS:{fontSize:15,color:"#64748b",margin:"0 auto 36px",maxWidth:460,lineHeight:1.7,fontWeight:400},
-  qList:{display:"flex",flexDirection:"column",gap:8,maxWidth:440,margin:"0 auto"},
-  qBtn:{display:"flex",alignItems:"center",gap:14,padding:"16px 22px",borderRadius:16,border:"1.5px solid #e2e8f0",background:"#fff",color:"#334155",cursor:"pointer",fontSize:14,fontWeight:600,fontFamily:"inherit",boxShadow:"0 1px 3px rgba(0,0,0,0.03)",textAlign:"left"},
+  mid:{flex:1,overflow:"auto",padding:"16px 16px 0",WebkitOverflowScrolling:"touch"},
+  hero:{textAlign:"center",paddingTop:16},
+  heroT:{fontSize:22,fontWeight:800,color:"#0f172a",margin:"0 0 8px",letterSpacing:"-0.04em"},
+  heroS:{fontSize:14,color:"#64748b",margin:"0 auto 28px",maxWidth:400,lineHeight:1.6},
+  qList:{display:"flex",flexDirection:"column",gap:8,maxWidth:400,margin:"0 auto"},
+  qBtn:{display:"flex",alignItems:"center",gap:12,padding:"14px 18px",borderRadius:14,border:"1.5px solid #e2e8f0",background:"#fff",color:"#334155",cursor:"pointer",fontSize:14,fontWeight:600,boxShadow:"0 1px 3px rgba(0,0,0,0.03)",textAlign:"left"},
 
-  uWrap:{display:"flex",justifyContent:"flex-end",marginBottom:16},
-  uB:{maxWidth:"72%",background:"linear-gradient(135deg,#6366f1,#7c3aed)",borderRadius:"22px 22px 6px 22px",padding:"14px 22px",boxShadow:"0 4px 16px rgba(99,102,241,0.18)"},
-  uT:{margin:0,fontSize:14,color:"#fff",lineHeight:1.65,fontWeight:450},
-  aB:{background:"#fff",border:"1px solid #e2e8f0",borderRadius:22,padding:"24px 28px",boxShadow:"0 1px 4px rgba(0,0,0,0.03)"},
-  aH:{display:"flex",alignItems:"center",gap:8,marginBottom:18,paddingBottom:14,borderBottom:"1px solid #f1f5f9"},
-  aN:{fontSize:11,fontWeight:800,color:"#6366f1",textTransform:"uppercase",letterSpacing:"0.1em"},
-  aC:{fontSize:14,lineHeight:1.75,color:"#475569"},
+  evCard:{display:"flex",width:"100%",padding:"14px 16px",borderRadius:14,border:"1.5px solid #e2e8f0",background:"#fff",cursor:"pointer",marginBottom:8,boxShadow:"0 1px 3px rgba(0,0,0,0.03)",textAlign:"left",animation:"fadeUp 0.3s ease both"},
 
-  loadC:{display:"flex",alignItems:"center",gap:16,background:"#eef2ff",border:"1.5px solid #c7d2fe",borderRadius:16,padding:"18px 22px"},
-  sp:{width:24,height:24,border:"3px solid #c7d2fe",borderTopColor:"#6366f1",borderRadius:"50%",animation:"espin 0.7s linear infinite",flexShrink:0},
-  ldT:{margin:0,fontSize:14,fontWeight:700,color:"#4338ca"},
-  ldS:{margin:"3px 0 0",fontSize:12,color:"#6366f1",fontWeight:500},
-  errB:{background:"#fef2f2",border:"1.5px solid #fecaca",borderRadius:16,padding:"14px 20px",color:"#b91c1c",fontSize:13,marginTop:12,fontWeight:500},
+  loadC:{display:"flex",alignItems:"center",gap:14,background:"#eef2ff",border:"1.5px solid #c7d2fe",borderRadius:14,padding:"16px 18px"},
+  sp:{width:22,height:22,border:"3px solid #c7d2fe",borderTopColor:"#6366f1",borderRadius:"50%",animation:"espin 0.7s linear infinite",flexShrink:0},
+  ldT:{margin:0,fontSize:13,fontWeight:700,color:"#4338ca"},
+  ldS:{margin:"2px 0 0",fontSize:11,color:"#6366f1",fontWeight:500},
+  errB:{background:"#fef2f2",border:"1.5px solid #fecaca",borderRadius:14,padding:"12px 16px",color:"#b91c1c",fontSize:12,marginTop:10,fontWeight:500},
 
-  foot:{borderTop:"1px solid #e2e8f0",padding:"10px 20px 18px",flexShrink:0,background:"#fff"},
-  chips:{display:"flex",gap:6,marginBottom:10,overflow:"auto",paddingBottom:2},
-  chipB:{padding:"8px 18px",borderRadius:99,border:"1.5px solid #e2e8f0",background:"#f8fafc",color:"#475569",cursor:"pointer",fontSize:12,fontWeight:600,whiteSpace:"nowrap",fontFamily:"inherit"},
-  tIn:{flex:1,padding:"15px 22px",borderRadius:99,border:"1.5px solid #e2e8f0",background:"#f8fafc",color:"#1e293b",fontSize:14,outline:"none",fontFamily:"inherit",fontWeight:450},
-  sendB:{width:52,height:52,borderRadius:99,border:"none",background:"linear-gradient(135deg,#6366f1,#7c3aed)",color:"#fff",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,boxShadow:"0 4px 14px rgba(99,102,241,0.25)",fontSize:20,fontWeight:700},
-  mSp:{width:18,height:18,border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",borderRadius:"50%",animation:"espin 0.7s linear infinite"},
+  foot:{borderTop:"1px solid #e2e8f0",padding:"8px 16px 14px",flexShrink:0,background:"#fff"},
+  chips:{display:"flex",gap:5,marginBottom:8,overflow:"auto",paddingBottom:2},
+  chipB:{padding:"6px 14px",borderRadius:99,border:"1.5px solid #e2e8f0",background:"#f8fafc",color:"#475569",cursor:"pointer",fontSize:11,fontWeight:600,whiteSpace:"nowrap"},
+  tIn:{flex:1,padding:"12px 18px",borderRadius:99,border:"1.5px solid #e2e8f0",background:"#f8fafc",color:"#1e293b",fontSize:13,outline:"none",fontFamily:"inherit"},
+  sendB:{width:46,height:46,borderRadius:99,border:"none",background:"linear-gradient(135deg,#6366f1,#7c3aed)",color:"#fff",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,boxShadow:"0 4px 14px rgba(99,102,241,0.25)",fontSize:18,fontWeight:700},
+  mSp:{width:16,height:16,border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",borderRadius:"50%",animation:"espin 0.7s linear infinite"},
 };
 
 ReactDOM.render(React.createElement(App),document.getElementById("root"));
 </script>
 <script>
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js')
-      .then(reg => console.log('SW registered:', reg.scope))
-      .catch(err => console.log('SW registration failed:', err));
-  });
-}
+if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').then(r=>console.log('SW:',r.scope)).catch(e=>console.log('SW fail:',e))})}
 </script>
 </body>
 </html>
