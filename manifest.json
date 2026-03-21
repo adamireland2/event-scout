@@ -1,4 +1,5 @@
 {
+  "id": "/event-scout/",
   "name": "Event Scout — Find Events That Close Deals",
   "short_name": "Event Scout",
   "description": "AI-powered event intelligence for tax incentive professionals. Find the conferences and networking events where your next clients will be.",
@@ -9,6 +10,8 @@
   "background_color": "#f8fafc",
   "theme_color": "#6366f1",
   "categories": ["business", "productivity"],
+  "iarc_rating_id": "",
+  "prefer_related_applications": false,
   "icons": [
     { "src": "icons/icon-72.png", "sizes": "72x72", "type": "image/png", "purpose": "any" },
     { "src": "icons/icon-96.png", "sizes": "96x96", "type": "image/png", "purpose": "any" },
