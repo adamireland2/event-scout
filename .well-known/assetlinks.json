@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.yourcompany.eventscout",
+        "sha256_cert_fingerprints": ["47:B3:A8:2C:6A:79:3C:F6:28:30:7F:03:43:3B:CC:F2:DD:5B:F6:98:E8:42:78:58:EB:B7:DA:E8:FD:BE:BE:47"]
+      }
+    }]
