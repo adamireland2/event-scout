@@ -1,4 +1,4 @@
-const CACHE_NAME = 'event-scout-v2';
+const CACHE_NAME = 'event-scout-v3';
 const PRECACHE_URLS = [
   './',
   './index.html',

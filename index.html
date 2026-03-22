@@ -116,34 +116,90 @@ const PRIORITY={
 
 /* ─── Parse events from AI response ─── */
 function parseEvents(text){
+  // Try JSON first
   try{
-    // Try direct JSON parse first
-    const trimmed=text.trim();
-    const start=trimmed.indexOf("[");
-    const end=trimmed.lastIndexOf("]");
-    if(start!==-1&&end!==-1){
-      const jsonStr=trimmed.slice(start,end+1);
-      const parsed=JSON.parse(jsonStr);
-      if(Array.isArray(parsed))return parsed;
-    }
+    const s=text.indexOf("["),e=text.lastIndexOf("]");
+    if(s!==-1&&e>s){const p=JSON.parse(text.slice(s,e+1));if(Array.isArray(p)&&p.length>0)return p}
   }catch(e){}
-  // Fallback: extract from markdown
+
+  // Robust markdown parser
   const events=[];
-  const blocks=text.split(/^###\s+/m).filter(b=>b.trim());
+  // Split on ### headers, --- dividers, or ## headers
+  const blocks=text.split(/(?:^|\n)(?:#{2,3}\s+|\-{3,})/);
+
   for(const block of blocks){
-    const lines=block.split("\\n");
-    const ev={name:lines[0]?.replace(/^#+\s*/,"").trim()||"Unnamed Event"};
-    const get=(key)=>{const r=new RegExp("\\*\\*"+key+":\\*\\*\\s*(.+)","i");const m=block.match(r);return m?m[1].trim():""};
-    ev.date=get("Date");ev.location=get("Location");ev.organizer=get("Produced by")||get("Organizer");
-    ev.link=get("Link");ev.format=get("Format");ev.cost=get("Cost");
-    ev.why=get("Why this event")||get("Why");ev.decision_makers=get("Decision makers")||get("Decision makers likely in the room");
-    ev.services=(get("Relevant service lines")||get("Services")||"").split(/[,/]/).map(s=>s.trim()).filter(Boolean);
-    const pStr=(get("Priority")||"").toLowerCase();
-    ev.priority=pStr.includes("must")?"must-attend":pStr.includes("strong")?"strong-fit":"worth-considering";
-    ev.actions=[];ev.member_org=block.toLowerCase().includes("member org");
-    const urlMatch=block.match(/https?:\/\/[^\s\)>\]]+/);
-    if(!ev.link&&urlMatch)ev.link=urlMatch[0];
-    if(ev.name&&ev.name!=="Unnamed Event")events.push(ev);
+    if(!block||block.trim().length<40)continue;
+
+    // Extract field with **Key:** Value or **Key:** \n Value patterns
+    const get=(keys)=>{
+      for(const key of(Array.isArray(keys)?keys:[keys])){
+        // Match **Key:** followed by value on same line or next line
+        const rx=new RegExp("\\*\\*"+key+"\\s*:?\\*\\*:?\\s*(.+?)(?=\\n\\*\\*|\\n#{2,}|\\n-{3,}|$)","is");
+        const m=block.match(rx);
+        if(m&&m[1]){
+          let v=m[1].trim().replace(/^\*+|\*+$/g,"").replace(/^#+\s*/,"").trim();
+          if(v.length>2)return v;
+        }
+      }
+      return "";
+    };
+
+    // Try to find event name from first meaningful line or bold text
+    let name="";
+    const nameMatch=block.match(/(?:^|\n)\s*\*?\*?\[?([A-Z][^\n\*\[]{8,80})/);
+    const boldName=block.match(/\*\*\[?([^\*\]\n]{8,100})\]?\*\*/);
+    const h3Name=block.match(/^([^\n\*#]{8,100})/);
+    name=(boldName&&boldName[1])||
+         (nameMatch&&nameMatch[1])||
+         (h3Name&&h3Name[1])||"";
+    name=name.replace(/\*+/g,"").replace(/^\[|\]$/g,"").replace(/\(http[^\)]+\)/g,"").trim();
+
+    // Skip if this block is just intro/search narration
+    if(!name||name.length<5)continue;
+    if(/^(I'll|Let me|Based on|I found|I will|Here are|Looking|Searching)/i.test(name))continue;
+
+    const date=get(["Date"]);
+    const location=get(["Location"]);
+    const organizer=get(["Produced by","Organizer"]);
+    const link=get(["Link"]);
+    const format=get(["Format"]);
+    const cost=get(["Cost"]);
+    const why=get(["Why this event","Why"]);
+    const dm=get(["Decision makers likely in the room","Decision makers"]);
+    const svc=get(["Relevant service lines","Services"]);
+    const pStr=get(["Priority"]);
+    const acts=get(["Action items","Actions","Action"]);
+
+    // Must have at least a name and one other field to count
+    if(!date&&!location&&!link&&!organizer)continue;
+
+    // Find any URL in the block as fallback
+    let url=link;
+    if(!url){const um=block.match(/https?:\/\/[^\s\)\]>"]+/);if(um)url=um[0]}
+    // Clean URL of trailing markdown
+    if(url)url=url.replace(/[\]\)>\*]+$/,"").trim();
+
+    const priority=pStr.includes("🔴")||pStr.toLowerCase().includes("must")?"must-attend":
+                   pStr.includes("🟡")||pStr.toLowerCase().includes("strong")?"strong-fit":"worth-considering";
+
+    const services=(svc||"").split(/[,·•]/).map(s=>s.replace(/\*+/g,"").trim()).filter(s=>s.length>1&&s.length<40);
+    const actions=(acts||"").split(/(?:\n-|\n•|\n\d\.)/).map(s=>s.replace(/\*+/g,"").trim()).filter(s=>s.length>5);
+
+    events.push({
+      name:name.slice(0,120),
+      date:date.replace(/\*+/g,"").slice(0,60),
+      location:location.replace(/\*+/g,"").slice(0,100),
+      organizer:organizer.replace(/\*+/g,"").slice(0,60),
+      link:url||"",
+      format:format.replace(/\*+/g,"").slice(0,30),
+      cost:cost.replace(/\*+/g,"").slice(0,50),
+      priority,
+      why:why.replace(/\*+/g,"").slice(0,400),
+      decision_makers:dm.replace(/\*+/g,"").slice(0,400),
+      services,
+      actions,
+      member_org:block.toLowerCase().includes("member org"),
+    });
   }
   return events;
 }
@@ -152,7 +208,7 @@ function parseEvents(text){
 function gcalUrl(ev){
   const title=encodeURIComponent(ev.name||"");
   const loc=encodeURIComponent(ev.location||"");
-  const details=encodeURIComponent((ev.why||"")+"\\n\\n"+(ev.link||""));
+  const details=encodeURIComponent((ev.why||"")+"\n\n"+(ev.link||""));
   // Try to parse date for calendar
   let dates="";
   if(ev.date){
@@ -191,7 +247,7 @@ function buildQuery(base,dateRange,customFrom,customTo,cities,memberships){
   } else { ds="in the next "+parseInt(dateRange)+" days"; }
   const cn=cities.map(id=>{const c=CITIES.find(x=>x.id===id);return c?c.label:null}).filter(Boolean);
   const cs=cn.length===CITIES.length?"all major US cities":cn.length>3?cn.slice(0,3).join(", ")+", and "+(cn.length-3)+" other cities":cn.join(" and ");
-  let q=base+" "+ds+" in "+cs+". IN-PERSON EVENTS ONLY. Every event must have a physical venue. Return results as a JSON array following the output format in your instructions.";
+  let q=base+" "+ds+" in "+cs+". IN-PERSON EVENTS ONLY. Every event must have a physical venue. IMPORTANT: Return results as a JSON array. No other text — ONLY the JSON array.";
   if(memberships&&memberships.length>0){
     q+=" ALSO search these member organization event calendars: "+memberships.map(m=>m.name+(m.url?" ("+m.url+")":"")).join("; ")+".";
   }
@@ -347,7 +403,9 @@ function App(){
       for(let it=0;it<25;it++){
         const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-sonnet-4-5-20250929",max_tokens:16000,system:SYSTEM_PROMPT,tools:[{type:"web_search_20250305",name:"web_search",max_uses:20}],messages:conv})});
         if(!r.ok){const e=await r.json().catch(()=>({}));if(r.status===401)throw new Error("Invalid API key.");if(r.status===429)throw new Error("Rate limit — wait and retry.");throw new Error(e?.error?.message||"Error ("+r.status+")");}
-        const d=await r.json();fin+=(d.content?.filter(b=>b.type==="text")||[]).map(b=>b.text).join("\\n");
+        const d=await r.json();
+        const textParts=(d.content?.filter(b=>b.type==="text")||[]).map(b=>b.text);
+        fin+=textParts.join("\n");
         if(d.stop_reason==="end_turn")break;
         if(d.stop_reason==="tool_use"||d.content?.some(b=>b.type==="server_tool_use"||b.type==="tool_use")){
           sc.current++;setStep("Web search #"+sc.current+"...");conv.push({role:"assistant",content:d.content});
@@ -355,9 +413,11 @@ function App(){
           if(tr.length)conv.push({role:"user",content:tr});continue;
         }break;
       }
+      console.log("Raw AI output:",fin);
       const parsed=parseEvents(fin);
+      console.log("Parsed events:",parsed);
       if(parsed.length>0)setEvents(parsed);
-      else setErr("No events found. Try a broader search or different cities.");
+      else setErr("Could not find events. Try a different category or broader date range.");
     }catch(e){setErr(e.message)}finally{setOn(false)}
   },[key]);
 
