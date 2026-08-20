@@ -1,4 +1,4 @@
-const CACHE_NAME = 'event-scout-v4';
+const CACHE_NAME = 'event-scout-cre-v1';
 const PRECACHE_URLS = [
   './',
   './index.html',
@@ -27,7 +27,8 @@ self.addEventListener('fetch', event => {
     event.respondWith(fetch(event.request));
     return;
   }
-  // Network-first for navigations so updates always land; offline fallback to cache.
+  // Network-first for page navigations so app updates are picked up;
+  // fall back to cache when offline.
   if (event.request.mode === 'navigate') {
     event.respondWith(
       fetch(event.request).then(response => {
@@ -38,6 +39,7 @@ self.addEventListener('fetch', event => {
     );
     return;
   }
+  // Cache-first for static assets (fonts, icons, CDN scripts).
   event.respondWith(
     caches.match(event.request).then(cached => {
       if (cached) return cached;
